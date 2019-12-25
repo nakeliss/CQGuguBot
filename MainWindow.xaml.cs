@@ -35,9 +35,13 @@ namespace CQGuguBot
         public MainWindow()
         {
             InitializeComponent();
-            ServerAddressField.Text = $"ws://localhost:6700";
         }
- 
+
+        string serverAddress;
+
+
+
+
         /// <summary>
         /// 消息输出到文本框
         /// </summary>
@@ -46,7 +50,7 @@ namespace CQGuguBot
         {
             this.OutputField.Dispatcher.Invoke(new sysAct(() =>
             {
-                this.OutputField.AppendText(msg);
+                this.OutputField.AppendText("\n"+msg);
                 this.OutputField.ScrollToEnd();
             }));
         }
@@ -54,7 +58,7 @@ namespace CQGuguBot
 
         private void ConnectedButton_Click(object sender, RoutedEventArgs e)
         {
-            Output("\nStarting Connected...");
+            Output("Starting Connected...");
             ConnectedButton.IsEnabled = false;
             DisconnectedButton.IsEnabled = true;
             websocket = new WebSocket4Net.WebSocket(ServerAddressField.Text);
@@ -81,8 +85,8 @@ namespace CQGuguBot
 
         }
 
-
-        public void DefaultWhiteList()
+        //默认白名单文件
+        void DefaultWhiteList()
         {
             JObject defWL = JObject.FromObject(new
             {
@@ -96,16 +100,40 @@ namespace CQGuguBot
             File.WriteAllText(@"./config/WhiteList.json", defWL.ToString());
 
         }
+        //默认配置文件
+        void DefaultConfig()
+        {
+            JObject defCfg = JObject.FromObject(new
+            {
+                main = new
+                {
+                    serverAddress = @"ws://localhost:6700",
+                    Is_setu_On = true,
+                },
+                setu = new
+                {
+                    reg = @"^咕咕(车?([色瑟]图)?(setu)?){1,}(来?([gG][kK][dD])?)$",
+                    reg1 = @"^咕咕来点(车?([色瑟]图)?(setu)?(好康的)?){1,}",
+                    regpic="",
+                    regpic1="",
+                }
+            }) ;
+            File.WriteAllText(@"./config/Config.json",defCfg.ToString());
+        }
 
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            Debug.WriteLine("Window_Loaded");
+            LoadAll();
+
+        }
+        void LoadAll()
+        {
             DirectoryInfo data = new DirectoryInfo(@"./data");
             DirectoryInfo cfg = new DirectoryInfo(@"./config");
             if (data.Exists)
             {
-                
+
             }
             else
             {
@@ -114,25 +142,65 @@ namespace CQGuguBot
 
             if (cfg.Exists)
             {
-                FileInfo f = new FileInfo(@"./config/WhiteList.json");
-                if (f.Exists)
-                {
-                    WhiteListLoad();
-                }
-                else
-                {
-                    DefaultWhiteList();
-                    WhiteListLoad();
-                }
+                IsCfgFileReady();
+                IsWLFileReady();
             }
             else
             {
                 Directory.CreateDirectory(@"./config");
+                IsCfgFileReady();
+                IsWLFileReady();
             }
-            
+        }
+        //白名单准备就绪
+        void IsWLFileReady()
+        {
+            FileInfo wl = new FileInfo(@"./config/WhiteList.json");
+
+            if (wl.Exists)
+            {
+                WhiteListLoad();
+            }
+            else
+            {
+                DefaultWhiteList();
+                WhiteListLoad();
+            }
+        }
+        //配置文件准备就绪
+        void IsCfgFileReady()
+        {
+            FileInfo c = new FileInfo(@"./config/Config.json");
+            if (c.Exists)
+            {
+                ConfigLoad();
+            }
+            else
+            {
+                DefaultConfig();
+                ConfigLoad();
+            }
         }
 
 
+        private void ReloadConfig_Btn_Click(object sender, RoutedEventArgs e)
+        {
+            Output("开始重载配置文件···");
+            ConfigLoad();
+            Output("重载结束");
+        }
+
+        private void ReloadWhiteList_Btn_Click(object sender, RoutedEventArgs e)
+        {
+            Output("开始重载白名单文件···");
+            WhiteListLoad();
+            Output("重载结束");
+        }
+
+        private void ServerAddressField_Loaded(object sender, RoutedEventArgs e)
+        {
+            ServerAddressField.Text = serverAddress;
+        }
     }
 
 }

@@ -4,13 +4,17 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CQGuguBot"
-        mc:Ignorable="d" Height="763" Width="1150" FontFamily="/CQGuguBot;component/Fonts/#Alibaba Sans" FontSize="14" Loaded="Window_Loaded" MinWidth="850" MinHeight="150" Icon="ICON.png">
+        mc:Ignorable="d" Height="752" Width="1158" FontFamily="/CQGuguBot;component/Fonts/#Alibaba Sans" FontSize="14" Loaded="Window_Loaded" MinWidth="850" MinHeight="150" Icon="探头.ico">
+    <Window.Resources>
+        <SolidColorBrush x:Key="BrushFF494949" Color="#FF494949"/>
+        <SolidColorBrush x:Key="BrushFF959595" Color="#FF959595"/>
+    </Window.Resources>
     <Grid>
         <StackPanel VerticalAlignment="Top" Margin="8,8,8,0" Background="#59008BFF">
 
             <StackPanel Height="40" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="8,8,8,0">
                 <Label Content="ServerAddress" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Margin="0,0,8,0"/>
-                <TextBox x:Name="ServerAddressField" TextWrapping="Wrap" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" MinWidth="680" BorderBrush="Black">
+                <TextBox x:Name="ServerAddressField" TextWrapping="Wrap" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" MinWidth="680" BorderBrush="Black" Loaded="ServerAddressField_Loaded">
                     <TextBox.Resources>
                         <VisualBrush x:Key="TipText" TileMode="None" Opacity="0.5" Stretch="None" AlignmentX="Center" AlignmentY="Center">
                             <VisualBrush.Visual>
@@ -39,30 +43,37 @@
                     <ColumnDefinition Width="1*"/>
                     <ColumnDefinition Width="1*"/>
                 </Grid.ColumnDefinitions>
-                <Button x:Name="ConnectedButton" Content="Connected" Margin="8,4,4,8" Height="40" Background="#7F00FF00" Click="ConnectedButton_Click"/>
-                <Button x:Name="DisconnectedButton" Content="Disconnected" Margin="4,4,8,8" Grid.Column="2" Height="40" Background="#7FFF0000" Click="DisconnectedButton_Click" IsEnabled="False"/>
+                <Button x:Name="ConnectedButton" Content="Connected" Margin="8,4,4,8" Height="40" Background="#7F00FF00" Click="ConnectedButton_Click" FontWeight="Bold"/>
+                <Button x:Name="DisconnectedButton" Content="Disconnected" Margin="4,4,8,8" Grid.Column="2" Height="40" Background="#7FFF0000" Click="DisconnectedButton_Click" IsEnabled="False" FontWeight="Bold"/>
             </Grid>
         </StackPanel>
-        <Grid Margin="10,113,10,10">
+        <Grid Margin="8,113,8,8">
+            <Grid.RowDefinitions>
+                <RowDefinition/>
+                <RowDefinition Height="34"/>
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <DataGrid d:IsHidden="True"/>
-            <RichTextBox x:Name="OutputField" Background="#FF494949" ScrollViewer.CanContentScroll="True" Block.LineHeight="1" Foreground="White" VerticalAlignment="Bottom" Margin="0,0,4,0">
+            <RichTextBox x:Name="OutputField" Background="{DynamicResource BrushFF494949}" ScrollViewer.CanContentScroll="True" Block.LineHeight="1" Foreground="White" VerticalAlignment="Bottom" Margin="0,0,4,4" Grid.Row="0" BorderThickness="3" BorderBrush="{DynamicResource BrushFF959595}">
                 <FlowDocument>
                     <Paragraph>
                         <Run Text=""/>
                     </Paragraph>
                 </FlowDocument>
             </RichTextBox>
-            <Grid Grid.Column="1" Background="#4CFF9700" Margin="4,0,0,0">
-                <TextBox x:Name="InPutField_msgType" HorizontalAlignment="Left" Height="38" Margin="10,10,0,0" TextWrapping="Wrap" Text="group" VerticalAlignment="Top" Width="147" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
+            <Grid Grid.Column="1" Margin="4,0,0,0">
+                <TextBox x:Name="InPutField_msgType" HorizontalAlignment="Left" Height="38" Margin="10,10,0,0" TextWrapping="Wrap" Text="send_group_msg" VerticalAlignment="Top" Width="147" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
                 <TextBox x:Name="InPutField_msg" HorizontalAlignment="Left" Height="38" Margin="10,53,0,0" TextWrapping="Wrap" Text="爪巴" VerticalAlignment="Top" Width="147" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
                 <TextBox x:Name="InPutField_id" HorizontalAlignment="Left" Height="38" Margin="10,96,0,0" TextWrapping="Wrap" Text="814535754" VerticalAlignment="Top" Width="147" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
-                <Button Content="Button" HorizontalAlignment="Left" Margin="10,372,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
-                <TextBox x:Name="InPutField_json" Height="38" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Margin="10,295,10,0"/>
+                <Button Content="Button" HorizontalAlignment="Left" Margin="10,139,0,0" VerticalAlignment="Top" Width="147" Click="Button_Click"/>
+                <Button x:Name="ReloadConfig_Btn" Content="重载配置文件" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="4,0,0,4" Width="120" Background="{DynamicResource BrushFF494949}" Foreground="White" FontWeight="Bold" BorderThickness="3" BorderBrush="{DynamicResource BrushFF959595}" Click="ReloadConfig_Btn_Click"/>
+                <Button x:Name="ReloadWhiteList_Btn" Content="重载白名单" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="129,0,0,4" Width="120" Background="{DynamicResource BrushFF494949}" Foreground="White" FontWeight="Bold" BorderThickness="3" BorderBrush="{DynamicResource BrushFF959595}" Click="ReloadWhiteList_Btn_Click"/>
             </Grid>
+            <Label Content="Command =&gt;" Grid.Row="1" VerticalContentAlignment="Center" Margin="0" Background="{DynamicResource BrushFF494949}" Foreground="#FF00A2FF" Padding="18,0,0,0" BorderBrush="{DynamicResource BrushFF959595}" BorderThickness="3"/>
+            <TextBox x:Name="CommandField" TextWrapping="Wrap" Background="{DynamicResource BrushFF494949}" Foreground="#FF00DCFF" VerticalContentAlignment="Center" Grid.Row="1" BorderThickness="3" Padding="8,0,0,0" Grid.ColumnSpan="2" Margin="120,0" BorderBrush="{DynamicResource BrushFF959595}"/>
+            <Button Content="Button" Grid.Column="1" HorizontalAlignment="Right" Height="34" Grid.Row="1" VerticalAlignment="Top" Width="120" Background="{DynamicResource BrushFF494949}" Foreground="White" BorderThickness="3" BorderBrush="{DynamicResource BrushFF959595}"/>
         </Grid>
 
     </Grid>

@@ -15,6 +15,8 @@ using System.Net;
 using System.Net.Security;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
+using System.Windows.Threading;
 
 namespace CQGuguBot
 {
@@ -56,6 +58,9 @@ namespace CQGuguBot
         public int[] wlsetu_u;
         public int[] wlsetu_g;
         public int[] wlsetu_d;
+        public string regSetu;
+        public string regSetu1;
+        bool Is_setu_On;
         /// <summary>
         /// 消息解析类
         /// </summary>
@@ -65,11 +70,7 @@ namespace CQGuguBot
             S2J s2j = JsonConvert.DeserializeObject<S2J>(msg);
             string msgtype=null;
             int id=0;
-            string regSetu = @"^咕咕(车?([色瑟]图)?(setu)?){1,}(来?([gG][kK][dD])?)$";
-            string regSetu1 = @"^咕咕来点(车?([色瑟]图)?(setu)?(好康的)?){1,}";
             string urlSetu = @"https://api.lolicon.app/setu/?r18=2";
-            Regex regSetu00 = new Regex(@"^咕咕(车?([色瑟]图)?(setu)?){1,}(来?([gG][kK][dD])?)$");
-            Regex regSetu01 = new Regex(@"^咕咕来点(车?([色瑟]图)?(setu)?(好康的)?){1,}");
 
             if (s2j.message_type=="private")
             {
@@ -90,30 +91,40 @@ namespace CQGuguBot
 
             if (s2j.message != null)//开始套娃
             {
-                if ((Regex.IsMatch(s2j.message, regSetu)||Regex.IsMatch(s2j.message, regSetu1)))
+                //setu
+                if (((Regex.IsMatch(s2j.message, regSetu)||Regex.IsMatch(s2j.message, regSetu1)))&&(Is_setu_On))
                 {
                     if (wlsetu_g.Length == 0 || wlsetu_u.Length == 0 || wlsetu_d.Length == 0 || wlsetu_g.Contains(id) || wlsetu_u.Contains(id) || wlsetu_d.Contains(id))
                     {
-                        string s = GetResponseString(CreateGetHttpResponse(urlSetu));
-                        JObject o = JObject.Parse(s);
-                        string url = (string)o["data"][0]["url"];
-                        string msgat = @"[CQ:at,qq=" + s2j.user_id + "]";
-                        string msginfo = @"[PID:" + (string)o["data"][0]["pid"] + "][URL:" + url + "]";
-                        if (msgtype == "send_private_msg")
+                        try
                         {
-                            MsgSend(msgtype,msginfo, id);
+                            string s = GetResponseString(CreateGetHttpResponse(urlSetu));
+                            Debug.WriteLine(s);
+                            JObject o = JObject.Parse(s);
+                            string url = (string)o["data"][0]["url"];
+                            string msgat = @"[CQ:at,qq=" + s2j.user_id + "]";
+                            string msginfo = @"[PID:" + (string)o["data"][0]["pid"] + "][URL:" + url + "]";
+                            if (msgtype == "send_private_msg")
+                            {
+                                MsgSend(msgtype, msginfo, id);
+                            }
+                            else
+                            {
+                                MsgSend(msgtype, msgat + msginfo, id);
+                            }
+                            MsgSend(msgtype, "[CQ:image,file=" + url + "]", id);
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            MsgSend(msgtype, msgat + msginfo, id);
+                            Debug.WriteLine(ex);
                         }
-                        MsgSend(msgtype, "[CQ:image,file=" + url + "]", id);
                     }
                     else
                     {
                         MsgSend(msgtype, "不被允许的操作", id);
                     }
                 }
+                //qqq
                 else if (true)
                 {
 
@@ -164,43 +175,80 @@ namespace CQGuguBot
             Debug.WriteLine(j2s.ToString());
         }
 
-        #region 白名单实现
+        public void MsgDel(int id)
+        {
+            JObject j = JObject.FromObject(new
+            {
+                action = "delete_msg",
+                @params = new
+                {
+                    message_id=id
+                }
+            }) ;
+            Thread.Sleep(120000);
+            websocket.Send(j.ToString());
+            Debug.WriteLine(j.ToString());
+        }
+        #region 配置文件读取
+        public void ConfigLoad()
+        {
+            try
+            {
+                JObject o = JObject.Parse(File.ReadAllText(@"./config/Config.json"));
+                regSetu = (string)o["setu"]["reg"];
+                regSetu1 = (string)o["setu"]["reg1"];
+                Is_setu_On = (bool)o["main"]["Is_setu_On"];
+                serverAddress = (string)o["main"]["serverAddress"];
+                Output("配置加载完成");
+            }
+            catch (Exception ex)
+            {
+                Output("配置加载失败");
+                Output(ex.Message);
+            }
 
-        void WLSetu_u()
-        {
-            Dictionary<string, Dictionary<string, int[]>> aa = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, int[]>>>(File.ReadAllText(@"./config/WhiteList.json"));
-            wlsetu_u = new int[aa["setu"]["user_id"].Length];
-            for (int i = 0; i < aa["setu"]["user_id"].Length; i++)
-            {
-                wlsetu_u[i]=Convert.ToInt32(aa["setu"]["user_id"].GetValue(i));
-            }
         }
-        void WLSetu_g()
-        {
-            Dictionary<string, Dictionary<string, int[]>> aa = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, int[]>>>(File.ReadAllText(@"./config/WhiteList.json"));
-            wlsetu_g = new int[aa["setu"]["group_id"].Length];
-            for (int i = 0; i < aa["setu"]["group_id"].Length; i++)
-            {
-                wlsetu_g[i] = Convert.ToInt32(aa["setu"]["group_id"].GetValue(i));
-            }
-        }
-        void WLSetu_d()
-        {
-            Dictionary<string, Dictionary<string, int[]>> aa = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, int[]>>>(File.ReadAllText(@"./config/WhiteList.json"));
-            wlsetu_d = new int[aa["setu"]["discuss_id"].Length];
-            for (int i = 0; i < aa["setu"]["discuss_id"].Length; i++)
-            {
-                wlsetu_d[i] = Convert.ToInt32(aa["setu"]["discuss_id"].GetValue(i));
-            }
-        }
+
+
+
+
+        #endregion
+
+
+        #region 白名单配置读取
         public void WhiteListLoad()
         {
-            WLSetu_u();
-            WLSetu_g();
-            WLSetu_d();
+            try
+            {
+                Dictionary<string, Dictionary<string, int[]>> aa = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, int[]>>>(File.ReadAllText(@"./config/WhiteList.json"));
+                wlsetu_u = new int[aa["setu"]["user_id"].Length];
+                for (int i = 0; i < aa["setu"]["user_id"].Length; i++)
+                {
+                    wlsetu_u[i] = Convert.ToInt32(aa["setu"]["user_id"].GetValue(i));
+                }
+                wlsetu_g = new int[aa["setu"]["group_id"].Length];
+                for (int i = 0; i < aa["setu"]["group_id"].Length; i++)
+                {
+                    wlsetu_g[i] = Convert.ToInt32(aa["setu"]["group_id"].GetValue(i));
+                }
+                wlsetu_d = new int[aa["setu"]["discuss_id"].Length];
+                for (int i = 0; i < aa["setu"]["discuss_id"].Length; i++)
+                {
+                    wlsetu_d[i] = Convert.ToInt32(aa["setu"]["discuss_id"].GetValue(i));
+                }
+                Output("白名单加载完成");
+            }
+            catch (Exception ex)
+            {
+                Output("白名单加载失败");
+                Output(ex.Message);
+            }
+
         }
 
         #endregion
+
+
 
         #region S2J,J2S
 
@@ -241,6 +289,9 @@ namespace CQGuguBot
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Url + (postDataStr == "" ? "" : "?") + postDataStr);
             request.Method = "GET";
             request.ContentType = "application/json";
+            request.UserAgent= "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36";
+            request.Timeout = 30000;
+            request.CookieContainer = new CookieContainer();
 
             HttpWebResponse response = (HttpWebResponse)request.GetResponse();
             Stream myResponseStream = response.GetResponseStream();
@@ -273,13 +324,10 @@ namespace CQGuguBot
             request.Method = "GET";
 
             //设置代理UserAgent和超时
-            //request.UserAgent = userAgent;
-            //request.Timeout = timeout;
-            //if (cookies != null)
-            //{
-            //    request.CookieContainer = new CookieContainer();
-            //    request.CookieContainer.Add(cookies);
-            //}
+            request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36";
+            request.Timeout = 30000;
+            request.CookieContainer = new CookieContainer();
+
             return request.GetResponse() as HttpWebResponse;
         }
         /// <summary>
