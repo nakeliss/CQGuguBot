@@ -1,28 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Windows.Threading;
-using System.Net.Http;
-using SuperSocket.ClientEngine;
-using WebSocket4Net;
-using System.Threading;
-using Newtonsoft.Json;
-using sysAct = System.Action;
-using System.Text.RegularExpressions;
+﻿using Newtonsoft.Json.Linq;
+
+using System;
 using System.Diagnostics;
-using Newtonsoft.Json.Linq;
 using System.IO;
+using System.Windows;
+
+using sysAct = System.Action;
 
 namespace CQGuguBot
 {
@@ -38,20 +21,16 @@ namespace CQGuguBot
         }
 
         string serverAddress;
-
-
-
-
         /// <summary>
         /// 消息输出到文本框
         /// </summary>
         /// <param name="msg"></param>
         void Output(string msg)
         {
-            this.OutputField.Dispatcher.Invoke(new sysAct(() =>
+            OutputField.Dispatcher.Invoke(new sysAct(() =>
             {
-                this.OutputField.AppendText("\n"+msg);
-                this.OutputField.ScrollToEnd();
+                OutputField.AppendText("\n" + msg);
+                OutputField.ScrollToEnd();
             }));
         }
 
@@ -76,7 +55,7 @@ namespace CQGuguBot
         {
             try
             {
-                MsgSend(InPutField_msgType.Text, InPutField_msg.Text,int.Parse(InPutField_id.Text) );
+                MsgSend(InPutField_msgType.Text, InPutField_msg.Text, long.Parse(InPutField_id.Text));
             }
             catch (Exception ex)
             {
@@ -93,10 +72,10 @@ namespace CQGuguBot
                 setu = new
                 {
                     group_id = new JArray { },
-                    user_id=new JArray { },
-                    discuss_id=new JArray { }
+                    user_id = new JArray { },
+                    discuss_id = new JArray { }
                 },
-            }) ;
+            });
             File.WriteAllText(@"./config/WhiteList.json", defWL.ToString());
 
         }
@@ -107,18 +86,24 @@ namespace CQGuguBot
             {
                 main = new
                 {
+                    loginAccont = 0,
                     serverAddress = @"ws://localhost:6700",
                     Is_setu_On = true,
+                    Is_imageSearch_On = true,
                 },
                 setu = new
                 {
                     reg = @"^咕咕(车?([色瑟]图)?(setu)?){1,}(来?([gG][kK][dD])?)$",
                     reg1 = @"^咕咕来点(车?([色瑟]图)?(setu)?(好康的)?){1,}",
-                    regpic="",
-                    regpic1="",
+                    regpic = "",
+                    regpic1 = "",
+                },
+                imageSearch = new
+                {
+
                 }
-            }) ;
-            File.WriteAllText(@"./config/Config.json",defCfg.ToString());
+            });
+            File.WriteAllText(@"./config/Config.json", defCfg.ToString());
         }
 
 
@@ -137,7 +122,7 @@ namespace CQGuguBot
             }
             else
             {
-                Directory.CreateDirectory(@"./data");
+                //Directory.CreateDirectory(@"./data");
             }
 
             if (cfg.Exists)

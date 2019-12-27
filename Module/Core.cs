@@ -1,28 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using Newtonsoft.Json;
-using sysAct = System.Action;
-using System.Text.RegularExpressions;
-using System.Diagnostics;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Text.RegularExpressions;
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Security;
-using System.IO;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
-using System.Windows.Threading;
+using System.Threading.Tasks;
+using System.Windows;
+
+using sysAct = System.Action;
 
 namespace CQGuguBot
 {
     public partial class MainWindow : Window
     {
-
         #region Websocket实现
         WebSocket4Net.WebSocket websocket;
         private void WebsocketIn()
@@ -55,83 +53,111 @@ namespace CQGuguBot
 
         #region 消息解析实现
 
-        public int[] wlsetu_u;
-        public int[] wlsetu_g;
-        public int[] wlsetu_d;
+        public long[] wlsetu_u;
+        public long[] wlsetu_g;
+        public long[] wlsetu_d;
+        public long loginAccont;
         public string regSetu;
         public string regSetu1;
-        bool Is_setu_On;
+        public string regImageSearch;
+        public bool Is_setu_On;
+        public bool Is_imageSearch_On;
         /// <summary>
         /// 消息解析类
         /// </summary>
         /// <param name="msg"></param>
         public void MsgParsing(string msg)
         {
-            S2J s2j = JsonConvert.DeserializeObject<S2J>(msg);
-            string msgtype=null;
-            int id=0;
-            string urlSetu = @"https://api.lolicon.app/setu/?r18=2";
 
-            if (s2j.message_type=="private")
+
+            S2J s2j = JsonConvert.DeserializeObject<S2J>(msg);
+            string msgtype = null;
+            long id = 0;
+
+            if (s2j.message_type == "private")
             {
                 msgtype = "send_private_msg";
                 id = s2j.user_id;
             }
-            else if (s2j.message_type=="group")
+            else if (s2j.message_type == "group")
             {
                 msgtype = "send_group_msg";
                 id = s2j.group_id;
             }
-            else if (s2j.message_type=="discuss")
+            else if (s2j.message_type == "discuss")
             {
                 msgtype = "send_discuss_msg";
                 id = s2j.discuss_id;
             }
-            
+
+            if (s2j.message == null)
+            {
+
+
+            }
+
 
             if (s2j.message != null)//开始套娃
             {
+                try
+                {
+                    //搜图
+                    string regImageSearch = @"^(\[CQ:at,qq=" + loginAccont.ToString() + @"\]\s\[CQ:image)";
+                    if (Regex.IsMatch(s2j.message, regImageSearch) && Is_imageSearch_On)
+                    {
+
+                    }
+                }
+                catch (Exception)
+                {
+
+
+                }
+
                 //setu
-                if (((Regex.IsMatch(s2j.message, regSetu)||Regex.IsMatch(s2j.message, regSetu1)))&&(Is_setu_On))
+                if (((Regex.IsMatch(s2j.message, regSetu) || Regex.IsMatch(s2j.message, regSetu1))) && (Is_setu_On))
                 {
                     if (wlsetu_g.Length == 0 || wlsetu_u.Length == 0 || wlsetu_d.Length == 0 || wlsetu_g.Contains(id) || wlsetu_u.Contains(id) || wlsetu_d.Contains(id))
                     {
-                        try
-                        {
-                            string s = GetResponseString(CreateGetHttpResponse(urlSetu));
-                            Debug.WriteLine(s);
-                            JObject o = JObject.Parse(s);
-                            string url = (string)o["data"][0]["url"];
-                            string msgat = @"[CQ:at,qq=" + s2j.user_id + "]";
-                            string msginfo = @"[PID:" + (string)o["data"][0]["pid"] + "][URL:" + url + "]";
-                            if (msgtype == "send_private_msg")
-                            {
-                                MsgSend(msgtype, msginfo, id);
-                            }
-                            else
-                            {
-                                MsgSend(msgtype, msgat + msginfo, id);
-                            }
-                            MsgSend(msgtype, "[CQ:image,file=" + url + "]", id);
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.WriteLine(ex);
-                        }
+                        SendSetu(s2j, msgtype, id);
                     }
                     else
                     {
                         MsgSend(msgtype, "不被允许的操作", id);
                     }
                 }
-                //qqq
-                else if (true)
-                {
-
-                }
             }
         }
-        public void MsgSend(string type,string msg,int id)
+
+        void SendSetu(S2J s2j, string msgtype, long id)
+        {
+            string urlSetu = @"https://api.lolicon.app/setu/?r18=2";
+            try
+            {
+                string s = GetResponseString(CreateGetHttpResponse(urlSetu));
+                Debug.WriteLine(s);
+                JObject o = JObject.Parse(s);
+                string url = (string)o["data"][0]["url"];
+                string msgat = @"[CQ:at,qq=" + s2j.user_id + "]";
+                string msginfo = @"[PID:" + (string)o["data"][0]["pid"] + "][URL:" + url + "]";
+                if (msgtype == "send_private_msg")
+                {
+                    MsgSend(msgtype, msginfo, id);
+                }
+                else
+                {
+                    MsgSend(msgtype, msgat + msginfo, id);
+                }
+                MsgSend(msgtype, "[CQ:image,file=" + url + "]", id);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex);
+            }
+        }
+
+
+        public void MsgSend(string type, string msg, long id)
         {
             JObject j2s = null;
             if (type == "send_private_msg")
@@ -141,8 +167,8 @@ namespace CQGuguBot
                     action = type,
                     @params = new
                     {
-                        user_id=id,
-                        message=msg
+                        user_id = id,
+                        message = msg
                     }
                 });
             }
@@ -175,16 +201,16 @@ namespace CQGuguBot
             Debug.WriteLine(j2s.ToString());
         }
 
-        public void MsgDel(int id)
+        public void MsgDel(long id)
         {
             JObject j = JObject.FromObject(new
             {
                 action = "delete_msg",
                 @params = new
                 {
-                    message_id=id
+                    message_id = id
                 }
-            }) ;
+            });
             Thread.Sleep(120000);
             websocket.Send(j.ToString());
             Debug.WriteLine(j.ToString());
@@ -197,7 +223,9 @@ namespace CQGuguBot
                 JObject o = JObject.Parse(File.ReadAllText(@"./config/Config.json"));
                 regSetu = (string)o["setu"]["reg"];
                 regSetu1 = (string)o["setu"]["reg1"];
+                loginAccont = (long)o["main"]["loginAccont"];
                 Is_setu_On = (bool)o["main"]["Is_setu_On"];
+                Is_imageSearch_On = (bool)o["main"]["Is_imageSearch_On"];
                 serverAddress = (string)o["main"]["serverAddress"];
                 Output("配置加载完成");
             }
@@ -221,17 +249,17 @@ namespace CQGuguBot
             try
             {
                 Dictionary<string, Dictionary<string, int[]>> aa = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, int[]>>>(File.ReadAllText(@"./config/WhiteList.json"));
-                wlsetu_u = new int[aa["setu"]["user_id"].Length];
+                wlsetu_u = new long[aa["setu"]["user_id"].Length];
                 for (int i = 0; i < aa["setu"]["user_id"].Length; i++)
                 {
                     wlsetu_u[i] = Convert.ToInt32(aa["setu"]["user_id"].GetValue(i));
                 }
-                wlsetu_g = new int[aa["setu"]["group_id"].Length];
+                wlsetu_g = new long[aa["setu"]["group_id"].Length];
                 for (int i = 0; i < aa["setu"]["group_id"].Length; i++)
                 {
                     wlsetu_g[i] = Convert.ToInt32(aa["setu"]["group_id"].GetValue(i));
                 }
-                wlsetu_d = new int[aa["setu"]["discuss_id"].Length];
+                wlsetu_d = new long[aa["setu"]["discuss_id"].Length];
                 for (int i = 0; i < aa["setu"]["discuss_id"].Length; i++)
                 {
                     wlsetu_d[i] = Convert.ToInt32(aa["setu"]["discuss_id"].GetValue(i));
@@ -255,27 +283,29 @@ namespace CQGuguBot
 
         public class S2J
         {
-            public int group_id { get; set; }
-            public int message_id { get; set; }
-            public int user_id { get; set; }
-            public int discuss_id { get; set; }
+            public long group_id { get; set; }
+            public long message_id { get; set; }
+            public long user_id { get; set; }
+            public long discuss_id { get; set; }
             public string message_type { get; set; }
             public string post_type { get; set; }
             public int times { get; set; }
             public string message { get; set; }
+            public int retcode { get; set; }
+            public string status { get; set; }
         }
-        public class J2S
-        {
-            public string action { get; set; }
-            public Params @params { get; set; }
-        }
-        public class Params
-        {
-            public int user_id { get; set; }
-            public int group_id { get; set; }
-            public int discuss_id { get; set; }
-            public string message { get; set; }
-        }
+        //public class J2S
+        //{
+        //    public string action { get; set; }
+        //    public Params @params { get; set; }
+        //}
+        //public class Params
+        //{
+        //    public int user_id { get; set; }
+        //    public int group_id { get; set; }
+        //    public int discuss_id { get; set; }
+        //    public string message { get; set; }
+        //}
 
         #endregion
         #endregion
@@ -289,7 +319,7 @@ namespace CQGuguBot
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(Url + (postDataStr == "" ? "" : "?") + postDataStr);
             request.Method = "GET";
             request.ContentType = "application/json";
-            request.UserAgent= "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36";
+            request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36";
             request.Timeout = 30000;
             request.CookieContainer = new CookieContainer();
 
